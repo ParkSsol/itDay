@@ -2,44 +2,46 @@
 "📱 ui/presentation":
   - changed-files:
     - any-glob-to-any-file:
-      - "**/ui/**"
-      - "**/presentation/**"
-      - "**/designsystem/**"
+      - "android/**/ui/**"
+      - "android/**/presentation/**"
+      - "android/**/designsystem/**"
 
 "🧠 domain/usecase":
   - changed-files:
     - any-glob-to-any-file:
-      - "app/src/main/java/**/*UseCase*"
-      - "app/src/main/java/**/*Repository*"
-      - "app/src/main/java/**/domain/**/*"
+      - "android/app/src/main/java/**/*UseCase*"
+      - "android/app/src/main/java/**/*Repository*"
+      - "android/app/src/main/java/**/domain/**/*"
 
 "🗂 data/repository":
   - changed-files:
     - any-glob-to-any-file:
-      - "app/src/main/java/**/data/**/*"
-      - "app/src/main/java/**/*Dto*"
+      - "android/app/src/main/java/**/data/**/*"
+      - "android/app/src/main/java/**/*Dto*"
 
 "🌐 network/api":
   - changed-files:
     - any-glob-to-any-file:
-      - "app/src/main/java/**/network/**/*"
-      - "app/src/main/java/**/api/**/*"
+      - "android/app/src/main/java/**/network/**/*"
+      - "android/app/src/main/java/**/api/**/*"
 
 "💾 local/db":
   - changed-files:
     - any-glob-to-any-file:
-      - "app/src/main/java/**/local/**/*"
-      - "app/src/main/java/**/*Dao*"
+      - "android/app/src/main/java/**/local/**/*"
+      - "android/app/src/main/java/**/*Dao*"
 
 "🧪 test":
   - changed-files:
     - any-glob-to-any-file:
-      - "app/src/test/**/*"
-      - "app/src/androidTest/**/*"
+      - "android/app/src/test/**/*"
+      - "android/app/src/androidTest/**/*"
 
 "⚙️ build/gradle":
   - changed-files:
     - any-glob-to-any-file:
-      - "build.gradle*"
-      - "settings.gradle*"
-      - "gradle.properties"
+      - "android/build.gradle*"
+      - "android/app/build.gradle*"
+      - "android/settings.gradle*"
+      - "android/gradle.properties"
+      - "android/gradle/**/*"

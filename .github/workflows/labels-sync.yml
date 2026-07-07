@@ -1,0 +1,26 @@
+# .github/workflows/labels-sync.yml
+name: Sync Labels
+on:
+  push:
+    branches: [develop, main]
+    paths: ['.github/labels/labels.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: labels-sync-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crazy-max/ghaction-github-labeler@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          yaml-file: .github/labels/labels.yml
+          skip-delete: true

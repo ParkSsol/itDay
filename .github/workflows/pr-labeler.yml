@@ -1,0 +1,52 @@
+# .github/workflows/pr-labeler.yml
+name: PR Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, review_requested, review_request_removed]  # PR 생성/업데이트/재오픈/편집/리뷰 요청/리뷰 요청 해제 시
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      # 1️⃣ 파일 경로에 따른 자동 라벨링 (.github/labels/labeler.yml 기준)
+      - uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labels/labeler.yml
+
+      # 🏃 status: in progress (PR open / 재오픈 시)
+      - name: Add in-progress label
+        if: github.event.action == 'opened' || github.event.action == 'reopened'
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          labels: |
+            🏃 status: in progress
+
+      # 🔍 status: code review (리뷰 요청 시)
+      - name: Add code review label
+        if: github.event.action == 'review_requested'
+        uses: actions-ecosystem/action-add-labels@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          labels: |
+            🔍 status: code review
+
+      # 🔍 status: code review 제거 (리뷰 요청 해제 시)
+      - name: Remove code review label
+        if: github.event.action == 'review_request_removed'
+        uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          labels: |
+            🔍 status: code review

@@ -1,0 +1,76 @@
+name: Stacked PR Detector
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect-stacked:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Detect stacked PR patterns
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title;
+            const body = pr.body || '';
+
+            let isStacked = false;
+            let reason = '';
+
+            // 패턴 1: [N/M] 형태 (예: [1/3], [2/5])
+            const partPattern = /\[\d+\/\d+\]/;
+            if (partPattern.test(title)) {
+              isStacked = true;
+              const match = title.match(/(\[\d+\/\d+\])/);
+              reason = `PR 제목에서 파트 패턴 감지: ${match[0]}`;
+            }
+
+            // 패턴 2: 키워드 감지
+            const keywords = ['stacked', 'depends on', 'depends-on', 'stack of'];
+            const combinedText = (title + ' ' + body).toLowerCase();
+
+            for (const keyword of keywords) {
+              if (combinedText.includes(keyword)) {
+                isStacked = true;
+                reason = `PR에서 키워드 감지: "${keyword}"`;
+                break;
+              }
+            }
+
+            if (isStacked) {
+              // Add label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['📚 stacked-pr']
+              });
+
+              console.log(`✅ Stacked PR 라벨 추가됨 - ${reason}`);
+
+              // Comment on PR
+              const comment = `🔗 **Stacked PR 감지됨**\n\n${reason}\n\n` +
+                              `이 PR은 줄 수 제한 검사에서 제외됩니다.\n\n` +
+                              `**참고:**\n` +
+                              `- 파트 형식: \`[1/3]\`, \`[2/3]\` 등\n` +
+                              `- 키워드: \`stacked\`, \`depends on #123\` 등`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: comment
+              });
+            } else {
+              console.log('❌ Stacked PR 패턴 없음');
+            }
