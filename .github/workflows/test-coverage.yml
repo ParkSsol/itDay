@@ -1,0 +1,65 @@
+name: Test Coverage
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'android/**'
+      - '.github/workflows/test-coverage.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./android/gradlew
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle + Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            android/.gradle
+            android/**/build/
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Run tests with coverage
+        working-directory: android
+        run: |
+          tasks="$(./gradlew tasks --all --console=plain)"
+          selected=(testDebugUnitTest)
+          grep -q '^jacocoDebugReport -' <<< "$tasks" && selected+=(jacocoDebugReport)
+
+          if [ ${#selected[@]} -eq 1 ]; then
+            echo "::notice::JaCoCo가 아직 설정되지 않아 단위 테스트만 실행합니다."
+          fi
+
+          ./gradlew "${selected[@]}" --no-daemon --parallel
+        env:
+          SERVER_BASE_URL: ${{ secrets.SERVER_BASE_URL || '' }}
+          KAKAO_NATIVE_APP_KEY: ${{ secrets.KAKAO_NATIVE_APP_KEY || '' }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            android/app/build/reports/jacoco/jacocoDebugReport/
+          if-no-files-found: warn

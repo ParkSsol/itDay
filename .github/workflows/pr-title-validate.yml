@@ -1,0 +1,59 @@
+name: PR Title Validator
+
+on:
+  pull_request:
+    types: [opened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Validate PR title format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const title = pr.title;
+
+            // PR title follows the same Conventional Commit format as commits.
+            const pattern = /^(feat|fix|docs|refactor|test|chore|ci|perf)(?:\([a-z0-9-]+\))?: .{1,72}$/;
+
+            const isValid = pattern.test(title) && !title.endsWith('.');
+
+            if (!isValid) {
+              let message = '❌ PR 제목이 프로젝트 형식을 따르지 않습니다.\n\n';
+              message += '**필수 형식:**\n';
+              message += '```\n<type>: <subject>\n```\n\n';
+              message += '**예시:**\n';
+              message += '```\n';
+              message += 'feat: 혜택 검색 기능 구현\n';
+              message += 'fix: 로그인 토큰 만료 오류 수정\n';
+              message += 'chore: 의존성 업데이트\n';
+              message += '```\n\n';
+              message += '**type 가능한 값:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`, `perf`\n\n';
+              message += '**Subject 규칙:**\n';
+              message += '- 제목 본문 최대 72자\n';
+              message += '- 마침표 없음\n\n';
+              message += `**현재 제목:** \`${title}\``;
+
+              core.setFailed(message);
+
+              // Comment on PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: message
+              });
+            } else {
+              console.log('✅ PR 제목이 올바른 형식입니다.');
+            }
