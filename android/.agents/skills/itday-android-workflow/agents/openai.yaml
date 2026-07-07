@@ -1,0 +1,5 @@
+﻿interface:
+  display_name: "It-Day Android Workflow"
+  short_description: "It-Day Android 개발 규칙과 검증 절차"
+  default_prompt: "Use $itday-android-workflow to implement and verify an It-Day Android change."
+
