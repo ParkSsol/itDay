@@ -2,14 +2,12 @@ package com.example.itday.domain.auth.entity;
 
 import com.example.itday.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
+@Setter
 @Getter
 @Builder
 @NoArgsConstructor

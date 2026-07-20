@@ -2,10 +2,7 @@ package com.example.itday.domain.member.entity;
 
 import com.example.itday.domain.membership.entity.Membership;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,23 +31,14 @@ public class Member {
     @Column(name = "phone", nullable = false)
     private String phone;
 
-    @Column(name = "birth", nullable = false)
+    @Column(name = "birth")
     private LocalDate birth;
-
-    @Column(name = "workplace")
-    private String workplace;
 
     @Column(name = "profileImg")
     private String profileImg;
 
-    @Column(name = "isRegistration", nullable = false)
-    private boolean isRegistration;
-
     @Column(name = "createdAt", nullable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "deletedAt")
-    private LocalDateTime deletedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "membershipId")
