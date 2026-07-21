@@ -1,0 +1,47 @@
+# .github/labeler.yml
+"📱 ui/presentation":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/**/ui/**"
+      - "android/**/presentation/**"
+      - "android/**/designsystem/**"
+
+"🧠 domain/usecase":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/app/src/main/java/**/*UseCase*"
+      - "android/app/src/main/java/**/*Repository*"
+      - "android/app/src/main/java/**/domain/**/*"
+
+"🗂 data/repository":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/app/src/main/java/**/data/**/*"
+      - "android/app/src/main/java/**/*Dto*"
+
+"🌐 network/api":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/app/src/main/java/**/network/**/*"
+      - "android/app/src/main/java/**/api/**/*"
+
+"💾 local/db":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/app/src/main/java/**/local/**/*"
+      - "android/app/src/main/java/**/*Dao*"
+
+"🧪 test":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/app/src/test/**/*"
+      - "android/app/src/androidTest/**/*"
+
+"⚙️ build/gradle":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "android/build.gradle*"
+      - "android/app/build.gradle*"
+      - "android/settings.gradle*"
+      - "android/gradle.properties"
+      - "android/gradle/**/*"

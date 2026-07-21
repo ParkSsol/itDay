@@ -1,0 +1,128 @@
+name: PR Line Limit Check
+on:
+  pull_request:
+    types: [opened, synchronize, labeled]  # 생성/업데이트/라벨 변경 시
+
+env:
+  PR_LINE_LIMIT: 200
+  PR_LINE_WARNING: 180
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-lines:
+    # design, stacked-pr 라벨이 있거나 chore 타입 PR이면 스킵
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'design') &&
+      !contains(github.event.pull_request.labels.*.name, 'stacked-pr') &&
+      !startsWith(github.event.pull_request.title, 'chore:') &&
+      !startsWith(github.event.pull_request.title, 'chore(')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+    # 1. 베이스 커밋 해시 저장 (이벤트 페이로드에서 직접 추출)
+    - name: Get base commit
+      run: echo "BASE_COMMIT=${{ github.event.pull_request.base.sha }}" >> $GITHUB_ENV
+
+    # 2. PR 브랜치 체크아웃
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # 3. 추가 줄 수 계산 (180 경고 / 200 실패)
+    - name: Count added lines
+      id: count
+      env:
+        IGNORE: '(^|/)(test|androidTest|build)/|(^|/)\.idea/|\.(md|json|iml)$'
+      run: |
+        # 추가 줄만 카운트 (Kotlin/Java/XML/Gradle 대상)
+        CHANGED=$(git diff $BASE_COMMIT --numstat \
+          | grep -vE "$IGNORE" \
+          | grep -E '\.(kt|java|xml|gradle|kts|ktm|ktsm)$' \
+          | awk '{add+=$1} END {print add+0}')
+
+        echo "added_lines=$CHANGED" >> $GITHUB_OUTPUT
+
+        if [ "$CHANGED" -gt "${{ env.PR_LINE_LIMIT }}" ]; then
+          echo "::error::🚫 PR 변경 추가 줄 수가 ${{ env.PR_LINE_LIMIT }} 초과 ($CHANGED 줄) - 실패!"
+          exit 1
+        elif [ "$CHANGED" -ge "${{ env.PR_LINE_WARNING }}" ]; then
+          echo "::warning::⚠️ PR 변경 줄 수 주의 ($CHANGED 줄 / ${{ env.PR_LINE_LIMIT }}) - 리뷰어 추가 확인 필요"
+        else
+          echo "::notice::✅ PR 변경 줄 수 OK ($CHANGED 줄 / ${{ env.PR_LINE_LIMIT }})"
+        fi
+
+    # 4. 실패/경고 시 PR 주석 추가
+    - name: Comment on PR for warning/error
+      if: always()
+      uses: actions/github-script@v7
+      env:
+        ADDED_LINES: ${{ steps.count.outputs.added_lines }}
+      with:
+        script: |
+          const lines = parseInt(process.env.ADDED_LINES || '0');
+          const limit = parseInt(process.env.PR_LINE_LIMIT);
+          const warnLimit = parseInt(process.env.PR_LINE_WARNING);
+          let message = '';
+
+          if (lines > limit) {
+            message = `🚫 **PR 크기 제한 위반** 🚫\n\n` +
+                      `추가 변경 줄 수: **${lines}** 줄 (제한: ${limit}줄)\n` +
+                      `작은 단위로 나누어 PR을 생성해 주세요!`;
+          } else if (lines >= warnLimit) {
+            message = `⚠️ **PR 크기 주의** ⚠️\n\n` +
+                      `추가 변경 줄 수: **${lines}** 줄 (권장: ${warnLimit}줄 미만)\n` +
+                      `추가 리뷰어 지정 권장합니다!`;
+          }
+
+          if (message) {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+          }
+
+  notify-skip:
+    if: |
+      contains(github.event.pull_request.labels.*.name, 'design') ||
+      contains(github.event.pull_request.labels.*.name, 'stacked-pr') ||
+      startsWith(github.event.pull_request.title, 'chore:') ||
+      startsWith(github.event.pull_request.title, 'chore(')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+    - name: Notify skip reason
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = context.payload.pull_request.title;
+          const labels = context.payload.pull_request.labels.map(l => l.name);
+          let reason = '';
+
+          if (title.startsWith('chore:') || title.startsWith('chore(')) {
+            reason = '**chore 타입 확인됨** - 줄 수 제한 체크 스킵됨\n\n유지보수 및 의존성 업데이트는 줄 수 제한을 적용하지 않습니다.';
+          } else if (labels.includes('stacked-pr')) {
+            reason = '**stacked-pr 라벨 확인됨** - 줄 수 제한 체크 스킵됨\n\nStacked PR은 누적 diff로 인해 줄 수 제한을 적용하지 않습니다.';
+          } else if (labels.includes('design')) {
+            reason = '**design 라벨 확인됨** - 줄 수 제한 체크 스킵됨\n\n디자인/UI 변경은 예외 처리됩니다.';
+          }
+
+          if (reason) {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `✅ ${reason}`
+            });
+          }

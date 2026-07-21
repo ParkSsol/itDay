@@ -1,0 +1,29 @@
+name: Commit Message Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate commit messages
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|test|chore|ci|perf)(\([a-z0-9-]+\))?: .{1,72}$'
+          failed=0
+          while IFS= read -r subject; do
+            if ! printf '%s' "$subject" | grep -Eq "$pattern" || [[ "$subject" == *. ]]; then
+              echo "Invalid commit message: $subject"
+              failed=1
+            fi
+          done < <(git log --format=%s "$BASE_SHA..$HEAD_SHA")
+          exit "$failed"

@@ -1,0 +1,35 @@
+# .github/labels/issue-labeler.yml
+🐞 bug:
+  - "버그"
+  - "크래시"
+  - "오류"
+  - "crash"
+  - "exception"
+
+✨ feature:
+  - "기능"
+  - "추가"
+  - "feature"
+  - "새로운"
+
+🔧 refactor:
+  - "리팩토링"
+  - "refactor"
+  - "개선"
+
+📖 docs:
+  - "문서"
+  - "docs"
+  - "readme"
+
+🧹 chore:
+  - "설정"
+  - "chore"
+  - "빌드"
+  - "gradle"
+
+💡 design:
+  - "설계"
+  - "구조"
+  - "architecture"
+  - "논의"
